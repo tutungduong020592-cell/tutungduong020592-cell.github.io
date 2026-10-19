@@ -44,7 +44,7 @@ label input{width:auto}
 </div>
 <button id="out">Đăng xuất</button>
 <script>
-const H="53d2dd2504402eec1bc49ad74daf2e90c352f399842f3d5a3606892213c110fc";
+const H="3fb0ea90b8a70f9029521e538856682f6445ec593733c00796ae208acafb196b";
 const SRC="https://thanhlv1186-coder.github.io/bao-cao-tho/tong-quan.html";
 async function sha(s){const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")}
 function show(){document.getElementById("login").remove();const f=document.createElement("iframe");f.src=SRC;f.title="Báo cáo tổng quan";document.body.prepend(f);document.getElementById("out").style.display="block"}
