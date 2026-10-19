@@ -4,11 +4,58 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
-<title>Báo cáo tổng quan hằng ngày · Vùng Trung Bộ</title>
-<meta property="og:title" content="Báo cáo tổng quan hằng ngày · Vùng Trung Bộ">
-<style>html,body{margin:0;height:100%;background:#edf2f9}iframe{border:0;display:block;width:100%;height:100%}</style>
+<title>BC Trung Bộ</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BC Trung Bộ">
+<meta name="theme-color" content="#1a4fa0">
+<link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAIAAACyr5FlAAAB5ElEQVR42u3dsQ2DMBBAUYgyBQxFKlr2YADmIC0VS7FHFghSJM7gmPcGOCHrx9DErpturuCbhyVAHIgDcSAOxIE4EAfiQByIA8SBOBAH4kAciANxIA7EgThAHIgDcSAOxIE4EAfiQByIA8SBOBAH4kAciANxIA5K8bQEl9vWIXBa+3pHjaodUltSGbGJeK0UWEbUZHEUWEbUfHEgDsSBOBAH4kAciANxIA7EAeJAHIgDcSAOxIE4EAfiQBwgDsSBOEjhLv+V3aYlcFo79nYOZewODJ8pjhLKOGGyOP67jDv04YMUcSAOxIE4EAfiQByIA3EgDhAH4kAciANxIA7EgTgQB+IAcSAOxIE4EAfiIHORRzBke+02F+8c4VfobuuQ+lpezogj82u3uSyO/K/dxgcp4kAciANxIA7EgTgQB4gDcSAOxIE4EAfiQByIA3GAOBAH4kAciANxIA7EgTgQB4gDcSAOxIE4EAfiQByIA3H8KPVRw0fmt2Of9tkOzM953ewcnBJHuh/B8cnpNo/jk3Net6qq6qabox4o54Pxt2nJKou/WLfIOPBaQRyIwxIgDsSBOBAH4kAciANxIA7EAeJAHIgDcSAOxIE4EAfiQBwgDsSBOBAH4kAciANxIA7EAeJg1wdV3kqqNbo8KQAAAABJRU5ErkJggg==">
+<link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAIAAACyr5FlAAAB5ElEQVR42u3dsQ2DMBBAUYgyBQxFKlr2YADmIC0VS7FHFghSJM7gmPcGOCHrx9DErpturuCbhyVAHIgDcSAOxIE4EAfiQByIA8SBOBAH4kAciANxIA7EgThAHIgDcSAOxIE4EAfiQByIA8SBOBAH4kAciANxIA5K8bQEl9vWIXBa+3pHjaodUltSGbGJeK0UWEbUZHEUWEbUfHEgDsSBOBAH4kAciANxIA7EAeJAHIgDcSAOxIE4EAfiQBwgDsSBOEjhLv+V3aYlcFo79nYOZewODJ8pjhLKOGGyOP67jDv04YMUcSAOxIE4EAfiQByIA3EgDhAH4kAciANxIA7EgTgQB+IAcSAOxIE4EAfiIHORRzBke+02F+8c4VfobuuQ+lpezogj82u3uSyO/K/dxgcp4kAciANxIA7EgTgQB4gDcSAOxIE4EAfiQByIA3GAOBAH4kAciANxIA7EgTgQB4gDcSAOxIE4EAfiQByIA3H8KPVRw0fmt2Of9tkOzM953ewcnBJHuh/B8cnpNo/jk3Net6qq6qabox4o54Pxt2nJKou/WLfIOPBaQRyIwxIgDsSBOBAH4kAciANxIA7EAeJAHIgDcSAOxIE4EAfiQBwgDsSBOBAH4kAciANxIA7EAeJg1wdV3kqqNbo8KQAAAABJRU5ErkJggg==">
+<style>
+html,body{margin:0;height:100%;background:#edf2f9;font-family:-apple-system,system-ui,Segoe UI,Roboto,sans-serif}
+iframe{border:0;display:block;width:100%;height:100%;padding-top:env(safe-area-inset-top);box-sizing:border-box;background:#edf2f9}
+#login{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,#1a4fa0,#0d2e63);padding:16px}
+.card{background:#fff;border-radius:18px;padding:28px 22px;width:100%;max-width:340px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.card img{width:64px;height:64px;border-radius:14px}
+h1{font-size:19px;margin:12px 0 4px;color:#0d2e63}
+p{margin:0 0 18px;color:#5b6b82;font-size:14px}
+input{width:100%;box-sizing:border-box;font-size:18px;padding:12px;border:1px solid #c9d4e5;border-radius:10px;text-align:center;letter-spacing:4px}
+button{width:100%;margin-top:12px;font-size:17px;padding:12px;border:0;border-radius:10px;background:#1a4fa0;color:#fff;font-weight:600}
+#err{color:#c62828;font-size:14px;min-height:20px;margin-top:10px}
+label{display:flex;gap:8px;align-items:center;justify-content:center;font-size:13px;color:#5b6b82;margin-top:10px}
+label input{width:auto}
+#out{position:fixed;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));background:rgba(13,46,99,.75);color:#fff;border:0;border-radius:20px;padding:6px 12px;font-size:12px;width:auto;margin:0;display:none}
+</style>
 </head>
 <body>
-<iframe src="https://thanhlv1186-coder.github.io/bao-cao-tho/tong-quan.html" title="Báo cáo tổng quan hằng ngày"></iframe>
+<div id="login">
+ <div class="card">
+  <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAIAAACyr5FlAAAB5ElEQVR42u3dsQ2DMBBAUYgyBQxFKlr2YADmIC0VS7FHFghSJM7gmPcGOCHrx9DErpturuCbhyVAHIgDcSAOxIE4EAfiQByIA8SBOBAH4kAciANxIA7EgThAHIgDcSAOxIE4EAfiQByIA8SBOBAH4kAciANxIA5K8bQEl9vWIXBa+3pHjaodUltSGbGJeK0UWEbUZHEUWEbUfHEgDsSBOBAH4kAciANxIA7EAeJAHIgDcSAOxIE4EAfiQBwgDsSBOEjhLv+V3aYlcFo79nYOZewODJ8pjhLKOGGyOP67jDv04YMUcSAOxIE4EAfiQByIA3EgDhAH4kAciANxIA7EgTgQB+IAcSAOxIE4EAfiIHORRzBke+02F+8c4VfobuuQ+lpezogj82u3uSyO/K/dxgcp4kAciANxIA7EgTgQB4gDcSAOxIE4EAfiQByIA3GAOBAH4kAciANxIA7EgTgQB4gDcSAOxIE4EAfiQByIA3H8KPVRw0fmt2Of9tkOzM953ewcnBJHuh/B8cnpNo/jk3Net6qq6qabox4o54Pxt2nJKou/WLfIOPBaQRyIwxIgDsSBOBAH4kAciANxIA7EAeJAHIgDcSAOxIE4EAfiQBwgDsSBOBAH4kAciANxIA7EAeJg1wdV3kqqNbo8KQAAAABJRU5ErkJggg==" alt="">
+  <h1>Báo cáo Vùng Trung Bộ</h1>
+  <p>Nhập mật khẩu để xem báo cáo</p>
+  <form id="f">
+   <input id="pw" type="password" inputmode="numeric" autocomplete="current-password" placeholder="••••">
+   <label><input id="keep" type="checkbox" checked> Ghi nhớ trên máy này</label>
+   <button type="submit">Đăng nhập</button>
+  </form>
+  <div id="err"></div>
+ </div>
+</div>
+<button id="out">Đăng xuất</button>
+<script>
+const H="53d2dd2504402eec1bc49ad74daf2e90c352f399842f3d5a3606892213c110fc";
+const SRC="https://thanhlv1186-coder.github.io/bao-cao-tho/tong-quan.html";
+async function sha(s){const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")}
+function show(){document.getElementById("login").remove();const f=document.createElement("iframe");f.src=SRC;f.title="Báo cáo tổng quan";document.body.prepend(f);document.getElementById("out").style.display="block"}
+function get(k){try{return localStorage.getItem(k)||sessionStorage.getItem(k)}catch(e){return null}}
+if(get("bc_ok")===H) show();
+document.getElementById("f").onsubmit=async e=>{e.preventDefault();
+ const h=await sha(document.getElementById("pw").value.trim());
+ if(h===H){try{(document.getElementById("keep").checked?localStorage:sessionStorage).setItem("bc_ok",H)}catch(e){}show()}
+ else{document.getElementById("err").textContent="Sai mật khẩu, anh nhập lại";document.getElementById("pw").value=""}
+};
+document.getElementById("out").onclick=()=>{try{localStorage.removeItem("bc_ok");sessionStorage.removeItem("bc_ok")}catch(e){}location.reload()};
+</script>
 </body>
 </html>
