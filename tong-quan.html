@@ -234,6 +234,7 @@ let _rz; window.addEventListener('resize', () => { clearTimeout(_rz); _rz = setT
 #dash-root .tq .tq-t td{padding:6px 8px}
 #dash-root .tq .tq-t td.l{max-width:220px;overflow:hidden;text-overflow:ellipsis}
 #tqbar button{background:#0070c0!important;font-family:"Aptos","Segoe UI","Be Vietnam Pro",sans-serif!important}
+#tqbar #tqxls{background:#107c41!important;box-shadow:0 4px 12px rgba(16,124,65,.35)}
 
 </style>
 
@@ -723,7 +724,7 @@ dash.calc('loi_nhom', {
 </script>
 
 </div>
-<div id="tqbar" hidden><button type="button" id="tqref">↻ Làm mới</button></div>
+<div id="tqbar" hidden><button type="button" id="tqxls">⬇ Xuất Excel</button> <button type="button" id="tqref">↻ Làm mới</button></div>
 <div id="lg"><div class="ld"><h1>Tổng quan thợ GHLĐ</h1><p id="lge">Đang tải dữ liệu…</p></div></div>
 <script>
 (() => {
@@ -746,11 +747,62 @@ dash.calc('loi_nhom', {
     catch (e) { txt = LS.get('tq_pub'); if (!txt) throw new Error('Không tải được dữ liệu (' + e.message + '). Kiểm tra mạng rồi tải lại trang.'); }
     const d = JSON.parse(txt);
     if (!d.kho_ngay) throw new Error('Dữ liệu chưa sẵn sàng, thử lại sau ít phút.');
-    lg.hidden = true; bar.hidden = false; window.dash._load(d);
+    window.__tq = d; lg.hidden = true; bar.hidden = false; window.dash._load(d);
   }
   document.getElementById('tqref').addEventListener('click', () => load().catch((x) => alert(x.message)));
   document.addEventListener('visibilitychange', () => { if (!document.hidden && lg.hidden) load().catch(() => {}); });
   load().catch((x) => { er.textContent = x.message; });
+})();
+</script>
+<script>
+(() => {
+  // Xuất Excel cho quản lý: tổng hợp kho, user (xếp theo rủi ro), chi tiết đơn trễ, chi tiết lỗi, theo ngày
+  const btn = document.getElementById('tqxls');
+  function lib() { return window.XLSX ? Promise.resolve(window.XLSX) : new Promise((ok, no) => { const sc = document.createElement('script');
+    sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'; sc.onload = () => ok(window.XLSX); sc.onerror = () => no(new Error('Không tải được thư viện Excel')); document.head.append(sc); }); }
+  const pct = (a, b) => b ? Math.round(a / b * 10000) / 100 : null;
+  const dmy = (x) => x ? x.slice(8, 10) + '/' + x.slice(5, 7) + '/' + x.slice(0, 4) : '';
+  function sheet(X, rows, w) { const ws = X.utils.json_to_sheet(rows); ws['!cols'] = (w || []).map((c) => ({ wch: c })); if (rows.length) ws['!autofilter'] = { ref: ws['!ref'] }; ws['!freeze'] = { xSplit: 0, ySplit: 1 }; return ws; }
+  async function run() {
+    const d = window.__tq; if (!d) return alert('Dữ liệu chưa tải xong.');
+    btn.disabled = true; const old = btn.textContent; btn.textContent = 'Đang tạo file…';
+    try {
+      const X = await lib(); const m = (d.meta || [{}])[0]; const wb = X.utils.book_new();
+      const KM = {}; (d.kho || []).forEach((k) => { KM[k.kho] = k; });
+      const agg = {}; (d.kho_ngay || []).forEach((r) => { const a = agg[r.kho] || (agg[r.kho] = { don: 0, tre: 0, loi: 0, mau: 0, ban: 0, ds: 0 });
+        a.don += r.don_tc || 0; a.tre += r.tre_hen || 0; a.loi += r.loi_tn || 0; a.mau += r.mau_tn || 0; a.ban += r.don_ban || 0; a.ds += r.doanh_so || 0; });
+      const T = { don: 0, tre: 0, loi: 0, mau: 0, ban: 0, ds: 0 };
+      const kr = Object.keys(agg).sort().map((k) => { const a = agg[k], i = KM[k] || {}; Object.keys(T).forEach((x) => T[x] += a[x]);
+        return { 'Kho': k, 'Đơn TC': a.don, 'Đơn trễ hẹn': a.tre, '% Đúng hẹn': pct(a.don - a.tre, a.don), 'MT đúng hẹn (%)': i.mt_dung_hen != null ? +(i.mt_dung_hen * 100).toFixed(2) : null,
+          'Lỗi tay nghề': a.loi, 'Mẫu số TN': a.mau, '% Tay nghề': pct(a.mau - a.loi, a.mau), 'MT tay nghề (%)': i.mt_tay_nghe != null ? +(i.mt_tay_nghe * 100).toFixed(2) : null,
+          'Sao phục vụ': i.sao_phuc_vu, 'MT sao': i.mt_sao, '% Hủy/nhập trả': i.ty_le_huy != null ? +(i.ty_le_huy * 100).toFixed(2) : null, 'MT hủy (%)': i.mt_huy != null ? +(i.mt_huy * 100).toFixed(2) : null,
+          'SL user': i.so_user, 'Đơn bán': a.ban, 'Doanh thu (sau VAT)': a.ds }; });
+      kr.push({ 'Kho': 'TOÀN VÙNG', 'Đơn TC': T.don, 'Đơn trễ hẹn': T.tre, '% Đúng hẹn': pct(T.don - T.tre, T.don), 'MT đúng hẹn (%)': m.mt_dung_hen != null ? +(m.mt_dung_hen * 100).toFixed(2) : null,
+        'Lỗi tay nghề': T.loi, 'Mẫu số TN': T.mau, '% Tay nghề': pct(T.mau - T.loi, T.mau), 'MT tay nghề (%)': m.mt_tay_nghe != null ? +(m.mt_tay_nghe * 100).toFixed(2) : null,
+        'MT sao': m.mt_sao, '% Hủy/nhập trả': m.ty_le_huy != null ? +(m.ty_le_huy * 100).toFixed(2) : null, 'MT hủy (%)': m.mt_huy != null ? +(m.mt_huy * 100).toFixed(2) : null, 'Đơn bán': T.ban, 'Doanh thu (sau VAT)': T.ds });
+      X.utils.book_append_sheet(wb, sheet(X, kr, [14, 9, 11, 11, 13, 11, 10, 11, 13, 11, 8, 13, 10, 8, 8, 16]), 'Tổng hợp kho');
+      const NV = {}; (d.nv || []).forEach((u) => { NV[u.khoa] = u; });
+      const ua = {}; (d.nv_ngay || []).forEach((r) => { const a = ua[r.khoa] || (ua[r.khoa] = { kho: r.kho, ma: r.ma_nv, don: 0, xm: 0, xt: 0, tre: 0, loi: 0, mau: 0, ban: 0, ds: 0 });
+        a.don += r.don_tc || 0; a.xm += r.xe_may || 0; a.xt += r.xe_tai || 0; a.tre += r.tre_hen || 0; a.loi += r.loi_tn || 0; a.mau += r.mau_tn || 0; a.ban += r.don_ban || 0; a.ds += r.doanh_so || 0; });
+      const ur = Object.entries(ua).map(([k, a]) => { const i = NV[k] || {};
+        return { 'User': i.user || a.ma, 'Kho': a.kho, 'Điểm rủi ro': a.tre + 3 * a.loi, 'Đơn TC': a.don, 'Xe máy': a.xm, 'Xe tải': a.xt, 'Đơn trễ hẹn': a.tre, '% Đúng hẹn': pct(a.don - a.tre, a.don),
+          'Lỗi tay nghề': a.loi, '% Tay nghề': pct(a.mau - a.loi, a.mau), 'Sao phục vụ': i.sao_phuc_vu ?? null, 'Tiếp cận 5 sao (%)': i.tiep_can_tc != null ? +(i.tiep_can_tc * 100).toFixed(1) : null, 'Đơn bán': a.ban, 'Doanh thu (sau VAT)': a.ds }; })
+        .sort((a, b) => b['Điểm rủi ro'] - a['Điểm rủi ro'] || b['Đơn trễ hẹn'] - a['Đơn trễ hẹn'] || b['Đơn TC'] - a['Đơn TC']);
+      X.utils.book_append_sheet(wb, sheet(X, ur, [30, 12, 10, 8, 8, 8, 11, 11, 11, 11, 10, 14, 8, 16]), 'User');
+      const tr = (d.tre || []).map((r) => ({ 'Ngày hoàn tất': dmy(r.ngay), 'Kho': r.kho, 'User giao': r.user, 'Mã vận đơn': r.van_don, 'Mã đơn (SO)': r.so, 'Loại yêu cầu': r.loai,
+        'Hẹn giao gốc': r.hen_goc, 'Hẹn giao cuối': r.hen_cuoi, 'Đến nhà khách': r.den_nha, 'Hoàn tất': r.hoan_tat, 'Số phút trễ': r.phut_tre, 'Số lần đổi giờ': r.so_lan_doi,
+        'Kiểu đổi giờ': r.kieu_doi, 'KH xác nhận': r.xn_kh, 'Lý do đổi giờ': r.ly_do, 'Điều phối': r.dieu_phoi }));
+      X.utils.book_append_sheet(wb, sheet(X, tr.length ? tr : [{ 'Ghi chú': 'Chưa có chi tiết đơn trễ trong dữ liệu kỳ này' }], [12, 12, 28, 18, 18, 34, 16, 16, 16, 16, 10, 10, 14, 14, 28, 24]), 'Đơn trễ hẹn');
+      const lr = (d.loi || []).map((r) => ({ 'Ngày': dmy(r.ngay), 'Kho': r.kho, 'User': r.user, 'Nhóm hàng': r.nhom_hang, 'Sản phẩm': r.san_pham, 'Nguồn': r.nguon }));
+      X.utils.book_append_sheet(wb, sheet(X, lr, [12, 12, 30, 18, 40, 16]), 'Lỗi tay nghề');
+      const nr = (d.kho_ngay || []).map((r) => ({ 'Ngày': dmy(r.ngay), 'Kho': r.kho, 'Đơn TC': r.don_tc, 'Xe máy': r.xe_may, 'Xe tải': r.xe_tai, 'Đơn trễ hẹn': r.tre_hen, 'Lỗi tay nghề': r.loi_tn, 'Mẫu số TN': r.mau_tn, 'Đơn bán': r.don_ban, 'Doanh thu (sau VAT)': r.doanh_so }));
+      X.utils.book_append_sheet(wb, sheet(X, nr, [12, 12, 8, 8, 8, 11, 11, 10, 8, 16]), 'Theo ngày - kho');
+      const ky = (m.ky || '').replace(/[^\w.\-]+/g, '_');
+      X.writeFile(wb, `TongQuan_GHLD_VungTB_${ky || 'ky'}.xlsx`, { compression: true });
+    } catch (e) { alert(e.message); }
+    finally { btn.disabled = false; btn.textContent = old; }
+  }
+  btn.addEventListener('click', run);
 })();
 </script>
 </body>
