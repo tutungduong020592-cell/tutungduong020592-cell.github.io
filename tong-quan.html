@@ -790,7 +790,7 @@ dash.calc('loi_nhom', {
         .sort((a, b) => b['Điểm rủi ro'] - a['Điểm rủi ro'] || b['Đơn trễ hẹn'] - a['Đơn trễ hẹn'] || b['Đơn TC'] - a['Đơn TC']);
       X.utils.book_append_sheet(wb, sheet(X, ur, [30, 12, 10, 8, 8, 8, 11, 11, 11, 11, 10, 14, 8, 16]), 'User');
       const tr = (d.tre || []).map((r) => ({ 'Ngày hoàn tất': dmy(r.ngay), 'Kho': r.kho, 'User giao': r.user, 'Mã vận đơn': r.van_don, 'Mã đơn (SO)': r.so, 'Loại yêu cầu': r.loai,
-        'Hẹn giao gốc': r.hen_goc, 'Hẹn giao cuối': r.hen_cuoi, 'Đến nhà khách': r.den_nha, 'Hoàn tất': r.hoan_tat, 'Số phút trễ': r.phut_tre, 'Số lần đổi giờ': r.so_lan_doi,
+        'Hẹn giao gốc': r.hen_goc, 'Hẹn giao cuối': r.hen_cuoi, 'Đến nhà khách': r.den_nha, 'Hoàn tất': r.hoan_tat, 'Phút so hẹn cuối (+ là trễ)': r.phut_tre, 'Số lần đổi giờ': r.so_lan_doi,
         'Kiểu đổi giờ': r.kieu_doi, 'KH xác nhận': r.xn_kh, 'Lý do đổi giờ': r.ly_do, 'Điều phối': r.dieu_phoi }));
       X.utils.book_append_sheet(wb, sheet(X, tr.length ? tr : [{ 'Ghi chú': 'Chưa có chi tiết đơn trễ trong dữ liệu kỳ này' }], [12, 12, 28, 18, 18, 34, 16, 16, 16, 16, 10, 10, 14, 14, 28, 24]), 'Đơn trễ hẹn');
       const lr = (d.loi || []).map((r) => ({ 'Ngày': dmy(r.ngay), 'Kho': r.kho, 'User': r.user, 'Nhóm hàng': r.nhom_hang, 'Sản phẩm': r.san_pham, 'Nguồn': r.nguon }));
