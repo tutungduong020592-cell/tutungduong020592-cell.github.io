@@ -236,6 +236,46 @@ let _rz; window.addEventListener('resize', () => { clearTimeout(_rz); _rz = setT
 #tqbar button{background:#0070c0!important;font-family:"Aptos","Segoe UI","Be Vietnam Pro",sans-serif!important}
 #tqbar #tqxls{background:#107c41!important;box-shadow:0 4px 12px rgba(16,124,65,.35)}
 
+
+/* ===== MOBILE-THE: điện thoại – bảng chuyển thành thẻ, không phải kéo ngang ===== */
+@media (max-width: 640px) {
+  html, body { overflow-x: hidden; }
+  #dash-root .tq .tq-tw { width: 100%; max-width: 100%; max-height: none !important; overflow: visible; border: 0; border-radius: 0; }
+  #dash-root .tq .tq-t, #dash-root .tq .tq-t tbody, #dash-root .tq .tq-t tr { display: block; width: 100%; }
+  #dash-root .tq .tq-t thead { display: none; }
+  #dash-root .tq .tq-t tbody tr { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 10px; box-sizing: border-box; background: #fff;
+    border: 1px solid #d9e0ea; border-left: 4px solid #0070c0; border-radius: 10px; padding: 9px 12px 10px; margin: 0 0 8px; box-shadow: 0 1px 3px rgb(0 32 96/.06); }
+  #dash-root .tq .tq-t tbody tr:hover td { background: transparent; }
+  #dash-root .tq .tq-t tbody tr.me { background: #fff7d6; border-left-color: #ffc000; }
+  #dash-root .tq .tq-t tbody tr.me td { background: transparent; }
+  /* mỗi ô: nhãn nhỏ ở trên, số to ở dưới */
+  #dash-root .tq .tq-t td { position: static !important; display: flex; flex-direction: column; gap: 1px; padding: 0 !important; border: 0; background: transparent;
+    white-space: normal; text-align: left !important; max-width: none !important; min-width: 0 !important; overflow: visible; overflow-wrap: anywhere;
+    font-size: 15px; font-weight: 800; color: #14213d; line-height: 1.2; }
+  #dash-root .tq .tq-t td::before { content: attr(data-label); font-weight: 600; font-size: 11px; color: #5f6d84; line-height: 1.2; }
+  /* ô đầu = tên kho / user: tiêu đề thẻ */
+  #dash-root .tq .tq-t td:first-child { grid-column: 1 / -1; font-size: 15.5px; color: #002060; padding-bottom: 6px !important; border-bottom: 1px dashed #d9e0ea; }
+  #dash-root .tq .tq-t td:first-child::before, #dash-root .tq .tq-t td[colspan]::before { content: none; }
+  #dash-root .tq .tq-t td[colspan] { grid-column: 1 / -1; border: 0; font-weight: 500; color: #5f6d84; padding-bottom: 0 !important; }
+  #dash-root .tq .tq-t td.tq-bad { background: transparent; color: #c00000; }
+  #dash-root .tq .tq-t td.tq-bad::after { content: "▼ chưa đạt"; font-size: 10px; font-weight: 700; }
+  #dash-root .tq .tq-t td.tq-ok { color: #0070c0; }
+  /* bảng user: kho thành dòng phụ dưới tên */
+  #dash-root .tq .tq-t.us td:nth-child(2), #dash-root .tq .tq-t.rs td:nth-child(2) { grid-column: 1 / -1; flex-direction: row; gap: 6px; font-size: 13px; font-weight: 700; color: #0070c0; margin-top: -4px; }
+  #dash-root .tq .tq-t.us td:nth-child(2)::before, #dash-root .tq .tq-t.rs td:nth-child(2)::before { content: "Kho"; font-size: 13px; }
+  #dash-root .tq .tq-t.rs td:last-child { grid-column: 1 / -1; flex-direction: row; justify-content: space-between; align-items: center; background: #fdecee; color: #c00000; border-radius: 6px; padding: 5px 8px !important; }
+  #dash-root .tq .tq-t.rs td:last-child::before { font-size: 13px; color: #9c0006; }
+  #dash-root .tq .tq-t.us td:last-child { grid-column: span 2; }
+  /* chi tiết lỗi: 2 cột, sản phẩm nguyên dòng */
+  #dash-root .tq .tq-t.lt tbody tr { grid-template-columns: repeat(2, minmax(0, 1fr)); border-left-color: #c00000; }
+  #dash-root .tq .tq-t.lt td { font-size: 14px; font-weight: 700; }
+  #dash-root .tq .tq-t.lt td:first-child { grid-column: auto; border: 0; padding: 0 !important; font-size: 14px; color: #c00000; }
+  #dash-root .tq .tq-t.lt td:first-child::before { content: attr(data-label); }
+  #dash-root .tq .tq-t.lt td:nth-child(5) { grid-column: 1 / -1; font-weight: 600; }
+  #dash-root .tq #chi-tiet-loi .tq-tw { max-height: 520px !important; overflow-y: auto; }
+  #dash-root .tq #danh-sach-user .tq-tw { max-height: 75vh !important; overflow-y: auto; }
+  #dash-root .tq .tq-card { padding: 12px; }
+}
 </style>
 
 <div class="tq">
@@ -803,6 +843,15 @@ dash.calc('loi_nhom', {
     finally { btn.disabled = false; btn.textContent = old; }
   }
   btn.addEventListener('click', run);
+})();
+</script>
+
+<script>
+/* MOBILE-THE: gắn nhãn cột cho từng ô để hiển thị dạng thẻ trên điện thoại */
+(() => {
+  const lab = (tb) => { const t = tb.closest('table'); const hs = [...t.querySelectorAll('thead th')].map((h) => h.textContent.trim());
+    tb.querySelectorAll('tr').forEach((tr) => [...tr.children].forEach((c, i) => { if (c.dataset.label !== hs[i]) c.dataset.label = hs[i] || ''; })); };
+  document.querySelectorAll('.tq-t tbody').forEach((tb) => { lab(tb); new MutationObserver(() => lab(tb)).observe(tb, { childList: true, subtree: true }); });
 })();
 </script>
 </body>
