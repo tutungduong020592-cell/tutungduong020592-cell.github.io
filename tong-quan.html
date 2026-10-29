@@ -437,7 +437,7 @@ dash.calc('kpi', {
   description: 'Cộng đơn, xe, trễ hẹn, lỗi, doanh số theo từng kho và toàn vùng, cho cả tháng (M) và từng tuần (W1 ngày 1–7, W2 8–14, W3 15–21, W4 22–cuối tháng). Mỗi kho: % đúng hẹn = 1 − trễ/đơn TC, % tay nghề = 1 − lỗi/mẫu số. Toàn vùng: % đúng hẹn, % tay nghề = cộng gộp cả vùng; sao = trung bình các kho (giống công ty và sheet BC); số kho đạt sao so với mục tiêu riêng của từng kho.',
   fn: (kho_ngay, kho, nv_ngay, meta) => {
     const wk = (d) => { const n = +d.slice(8, 10); return n <= 7 ? 'W1' : n <= 14 ? 'W2' : n <= 21 ? 'W3' : 'W4'; };
-    const F = ['don_tc', 'xe_may', 'xe_tai', 'xe_tai_nb', 'tre_hen', 'loi_tn', 'mau_tn', 'don_ban', 'doanh_so'];
+    const F = ['don_tc', 'xe_may', 'xe_tai', 'xe_tai_nb', 'tre_hen', 'loi_tn', 'mau_tn', 'don_ban', 'doanh_so', 'hnt_tc', 'huy', 'nhap_tra'];
     const acc = new Map(); const sellers = new Map();
     const get = (s, p) => { const k = s + '|' + p; if (!acc.has(k)) acc.set(k, Object.fromEntries([['k', k], ['scope', s], ['period', p], ...F.map((f) => [f, 0])])); return acc.get(k); };
     for (const r of kho_ngay) for (const p of ['M', wk(r.ngay)]) for (const s of ['Toàn vùng', r.kho]) { const a = get(s, p); for (const f of F) a[f] += +r[f] || 0; }
@@ -452,6 +452,11 @@ dash.calc('kpi', {
       if (a.mau_tn) kr.get(a.period).tn.push(1 - a.loi_tn / a.mau_tn);
     }
     const avg = (v) => (v && v.length ? v.reduce((x, y) => x + y, 0) / v.length : null);
+    // hủy + nhập trả theo kỳ (như HNO+): (hủy + nhập trả) / (đơn TC + hủy); kho đạt khi ≤ mục tiêu riêng của kho
+    const hntOf = (a) => (a.hnt_tc + a.huy > 0 ? (a.huy + a.nhap_tra) / (a.hnt_tc + a.huy) : null);
+    const mtH = new Map(kho.map((r) => [r.kho, r.mt_huy != null ? +r.mt_huy : meta[0].mt_huy]));
+    const hk = new Map();
+    for (const a of acc.values()) if (a.scope !== 'Toàn vùng') { const v = hntOf(a), m = mtH.get(a.scope); if (v != null && m) { const o = hk.get(a.period) || { co: 0, dat: 0 }; o.co++; if (v <= m) o.dat++; hk.set(a.period, o); } }
     return [...acc.values()].map((a) => {
       const xe_thue = Math.max(0, a.xe_tai - a.xe_tai_nb);
       const all = a.scope === 'Toàn vùng';
@@ -460,7 +465,9 @@ dash.calc('kpi', {
         dung_hen: a.don_tc ? 1 - a.tre_hen / a.don_tc : null,
         tay_nghe: a.mau_tn ? 1 - a.loi_tn / a.mau_tn : null,
         dt_don: a.don_ban ? a.doanh_so / a.don_ban : null, tho_ban: sellers.get(a.k)?.size ?? 0,
-        sao: s, so_kho_co_sao: all ? vs.length : null, so_kho_dat_sao: all ? [...sao].filter(([k, v]) => v >= mtK.get(k)).length : null };
+        ty_le_huy: hntOf(a), huy_nt: a.huy + a.nhap_tra, tong_don_huy: a.hnt_tc + a.huy,
+        so_kho_co_huy: all ? (hk.get(a.period) || {}).co ?? 0 : null, so_kho_dat_huy: all ? (hk.get(a.period) || {}).dat ?? 0 : null,
+        sao: s, so_kho_co_sao: all ? vs.length : null, so_kho_dat_sao: all ? [...sao].filter(([k, v]) => v > mtK.get(k)).length : null };   // sao đạt khi > MT (như HNO+)
     });
   },
 });
@@ -657,7 +664,7 @@ dash.calc('loi_nhom', {
     const pill = (p, v, mt, lab = ' · %HT ') => {
       const el = document.querySelector(`.k-p[data-p="${p}"]`), g = document.querySelector(`.k-g[data-g="${p}"]`), h = document.querySelector(`.ht[data-h="${p}"]`);
       if (v == null || mt == null) { el.hidden = true; g.hidden = true; h.textContent = ''; return; }
-      const ok = v >= mt, ht = v / mt;
+      const ok = p === 'sao' ? v > mt : v >= mt, ht = v / mt;   // sao đạt khi > MT (như HNO+)
       el.hidden = false; el.textContent = ok ? 'Đạt' : 'Chưa đạt'; el.className = 'tq-pill k-p ' + (ok ? 'tq-ok' : 'tq-bad'); el.dataset.p = p;
       h.textContent = lab + pc(ht, 1);
       g.hidden = false; const sc = 1.1; g.querySelector('i').style.width = Math.min(ht / sc, 1) * 100 + '%'; g.querySelector('i').style.background = ok ? '#16a34a' : '#dc2626'; g.querySelector('b').style.left = (1 / sc * 100) + '%';
@@ -673,18 +680,18 @@ dash.calc('loi_nhom', {
         const dk = R.don_tc / (M.ngay_ky || 1) * (M.so_ngay_thang || 30);   // dự kiến đến hết tháng theo tốc độ hiện tại
         const h = document.querySelector('.ht[data-h="sl"]'); h.replaceChildren(); [['Dự kiến hết tháng', n0(dk) + ' đơn → đạt ' + pc(dk / T.sl, 1) + ' mục tiêu tháng']].forEach(([a, v]) => { const d = document.createElement('span'); d.style.display = 'block'; d.append(a + ': '); const bb = document.createElement('b'); bb.textContent = v; bb.style.color = '#002060'; d.append(bb); h.append(d); }); }
     } else { pill('dh', null); pill('tn', null); pill('sao', null); pill('sl', null); }
-    // hủy / nhập trả: số tháng theo sheet BC (cột HỦY NHẬP TRẢ) + Q_HỦY NHẬP TRẢ; càng thấp càng tốt
+    // hủy / nhập trả theo kỳ đang xem (như HNO+): (hủy + nhập trả) / (đơn TC + hủy); càng thấp càng tốt; user xem số của kho
     {
       const HK = mode === 'ALL' ? M : KR;
-      const H = HK ? { v: HK.ty_le_huy, mt: HK.mt_huy, n: HK.huy_nt, d: HK.tong_don_huy } : null;
+      const HR = (kpi || []).find((r) => r.k === (mode === 'USER' ? khoOf : scope) + '|' + S.period);
+      const H = HK && HR ? { v: HR.ty_le_huy, mt: HK.mt_huy, n: HR.huy_nt, d: HR.tong_don_huy } : null;
       const hv = $('.hy-v'), hp = $('.hy-p'), hg = $('.hy-g');
       hv.textContent = H ? pc(H.v) : '—'; $('.hy-mt').textContent = H ? pc(H.mt) : '—';
       const ok = H && H.v != null && H.mt ? H.v <= H.mt : null;
       $('.hy-ht').textContent = ok == null ? '' : ' · %HT ' + pc(H.v / H.mt, 1);
       let nt = H && H.n != null ? ' · ' + n0(H.n) + '/' + n0(H.d) + ' đơn' : '';
-      if (mode === 'ALL' && M && M.so_kho_co_huy) nt += ` · ${M.so_kho_dat_huy}/${M.so_kho_co_huy} kho đạt`;
+      if (mode === 'ALL' && HR && HR.so_kho_co_huy) nt += ` · ${HR.so_kho_dat_huy}/${HR.so_kho_co_huy} kho đạt`;
       if (mode === 'USER') nt += ' · số của kho ' + khoOf;
-      if (S.period !== 'M') nt += ' · cả tháng';
       $('.hy-n').textContent = nt;
       if (ok == null) { hp.hidden = true; hg.hidden = true; }
       else {
@@ -729,15 +736,15 @@ dash.calc('loi_nhom', {
         const t = MK.get(r.scope) || {}; const tdh = t.mt_dung_hen ?? M.mt_dung_hen, ttn = t.mt_tay_nghe ?? M.mt_tay_nghe, tsao = t.mt_sao ?? M.mt_sao;
         const tr = document.createElement('tr'); tr.dataset.key = r.k;
         // 4 tiêu chí theo thứ tự: sao, đúng hẹn, tay nghề, hủy/nhập trả (hủy: thấp hơn mục tiêu là đạt)
-        const thuy = t.ty_le_huy, mhuy = t.mt_huy ?? M.mt_huy;
-        const cr = [['Sao', r.sao == null ? null : r.sao >= tsao], ['Đúng hẹn', r.dung_hen == null ? null : r.dung_hen >= tdh],
+        const thuy = r.ty_le_huy, mhuy = t.mt_huy ?? M.mt_huy;
+        const cr = [['Sao', r.sao == null ? null : r.sao > tsao], ['Đúng hẹn', r.dung_hen == null ? null : r.dung_hen >= tdh],
           ['Tay nghề', r.tay_nghe == null ? null : r.tay_nghe >= ttn], ['Hủy/NT', thuy == null || mhuy == null ? null : thuy <= mhuy]];
         const ev = cr.filter((c) => c[1] != null), okN = ev.filter((c) => c[1]).length, allOk = ev.length > 0 && okN === ev.length;
         tr.classList.add(allOk ? 'rk-ok' : 'rk-bad');
         const nm = td('', 'l rk-nm'); const sp = document.createElement('span'); sp.className = 'rk-name'; sp.textContent = r.scope;
         const bd = document.createElement('span'); bd.className = 'rk-bd ' + (allOk ? 'ok' : 'bad'); bd.textContent = allOk ? `${okN}/${ev.length} ĐẠT` : `⚠ ${okN}/${ev.length} CHƯA ĐẠT`; nm.append(sp, bd);
         const ch = td('', 'l rk-ch'); cr.forEach(([n, v]) => { const c = document.createElement('span'); c.className = 'rk-c ' + (v == null ? 'na' : v ? 'ok' : 'bad'); c.textContent = (v == null ? '– ' : v ? '✓ ' : '✗ ') + n; ch.append(c); });
-        tr.append(nm, ch, td(s2(r.sao), r.sao == null ? '' : r.sao >= tsao ? 'tq-ok' : 'tq-bad'), td(pc(r.dung_hen), r.dung_hen >= tdh ? 'tq-ok' : 'tq-bad'),
+        tr.append(nm, ch, td(s2(r.sao), r.sao == null ? '' : r.sao > tsao ? 'tq-ok' : 'tq-bad'), td(pc(r.dung_hen), r.dung_hen >= tdh ? 'tq-ok' : 'tq-bad'),
           td(pc(r.tay_nghe), r.tay_nghe == null ? '' : r.tay_nghe >= ttn ? 'tq-ok' : 'tq-bad'), td(thuy == null ? '—' : pc(thuy), thuy == null || mhuy == null ? '' : thuy <= mhuy ? 'tq-ok' : 'tq-bad'),
           td(n0(r.don_tc)), td(n0(r.loi_tn)), td(n0(r.tre_hen)));
         return tr;
@@ -846,17 +853,19 @@ dash.calc('loi_nhom', {
     try {
       const X = await lib(); const m = (d.meta || [{}])[0]; const wb = X.utils.book_new();
       const KM = {}; (d.kho || []).forEach((k) => { KM[k.kho] = k; });
-      const agg = {}; (d.kho_ngay || []).forEach((r) => { const a = agg[r.kho] || (agg[r.kho] = { don: 0, tre: 0, loi: 0, mau: 0, ban: 0, ds: 0 });
-        a.don += r.don_tc || 0; a.tre += r.tre_hen || 0; a.loi += r.loi_tn || 0; a.mau += r.mau_tn || 0; a.ban += r.don_ban || 0; a.ds += r.doanh_so || 0; });
-      const T = { don: 0, tre: 0, loi: 0, mau: 0, ban: 0, ds: 0 };
+      const agg = {}; (d.kho_ngay || []).forEach((r) => { const a = agg[r.kho] || (agg[r.kho] = { don: 0, tre: 0, loi: 0, mau: 0, ban: 0, ds: 0, htc: 0, huy: 0, nt: 0 });
+        a.don += r.don_tc || 0; a.tre += r.tre_hen || 0; a.loi += r.loi_tn || 0; a.mau += r.mau_tn || 0; a.ban += r.don_ban || 0; a.ds += r.doanh_so || 0;
+        a.htc += r.hnt_tc || 0; a.huy += r.huy || 0; a.nt += r.nhap_tra || 0; });
+      const T = { don: 0, tre: 0, loi: 0, mau: 0, ban: 0, ds: 0, htc: 0, huy: 0, nt: 0 };
+      const hntP = (a) => (a.htc + a.huy > 0 ? +((a.huy + a.nt) / (a.htc + a.huy) * 100).toFixed(2) : null);   // như HNO+
       const kr = Object.keys(agg).sort().map((k) => { const a = agg[k], i = KM[k] || {}; Object.keys(T).forEach((x) => T[x] += a[x]);
         return { 'Kho': k, 'Đơn TC': a.don, 'Đơn trễ hẹn': a.tre, '% Đúng hẹn': pct(a.don - a.tre, a.don), 'MT đúng hẹn (%)': i.mt_dung_hen != null ? +(i.mt_dung_hen * 100).toFixed(2) : null,
           'Lỗi tay nghề': a.loi, 'Mẫu số TN': a.mau, '% Tay nghề': pct(a.mau - a.loi, a.mau), 'MT tay nghề (%)': i.mt_tay_nghe != null ? +(i.mt_tay_nghe * 100).toFixed(2) : null,
-          'Sao phục vụ': i.sao_phuc_vu, 'MT sao': i.mt_sao, '% Hủy/nhập trả': i.ty_le_huy != null ? +(i.ty_le_huy * 100).toFixed(2) : null, 'MT hủy (%)': i.mt_huy != null ? +(i.mt_huy * 100).toFixed(2) : null,
+          'Sao phục vụ': i.sao_phuc_vu, 'MT sao': i.mt_sao, '% Hủy/nhập trả': hntP(a), 'MT hủy (%)': i.mt_huy != null ? +(i.mt_huy * 100).toFixed(2) : null,
           'SL user': i.so_user, 'Đơn bán': a.ban, 'Doanh thu (sau VAT)': a.ds }; });
       kr.push({ 'Kho': 'TOÀN VÙNG', 'Đơn TC': T.don, 'Đơn trễ hẹn': T.tre, '% Đúng hẹn': pct(T.don - T.tre, T.don), 'MT đúng hẹn (%)': m.mt_dung_hen != null ? +(m.mt_dung_hen * 100).toFixed(2) : null,
         'Lỗi tay nghề': T.loi, 'Mẫu số TN': T.mau, '% Tay nghề': pct(T.mau - T.loi, T.mau), 'MT tay nghề (%)': m.mt_tay_nghe != null ? +(m.mt_tay_nghe * 100).toFixed(2) : null,
-        'MT sao': m.mt_sao, '% Hủy/nhập trả': m.ty_le_huy != null ? +(m.ty_le_huy * 100).toFixed(2) : null, 'MT hủy (%)': m.mt_huy != null ? +(m.mt_huy * 100).toFixed(2) : null, 'Đơn bán': T.ban, 'Doanh thu (sau VAT)': T.ds });
+        'MT sao': m.mt_sao, '% Hủy/nhập trả': hntP(T), 'MT hủy (%)': m.mt_huy != null ? +(m.mt_huy * 100).toFixed(2) : null, 'Đơn bán': T.ban, 'Doanh thu (sau VAT)': T.ds });
       X.utils.book_append_sheet(wb, sheet(X, kr, [14, 9, 11, 11, 13, 11, 10, 11, 13, 11, 8, 13, 10, 8, 8, 16]), 'Tổng hợp kho');
       const NV = {}; (d.nv || []).forEach((u) => { NV[u.khoa] = u; });
       const ua = {}; (d.nv_ngay || []).forEach((r) => { const a = ua[r.khoa] || (ua[r.khoa] = { kho: r.kho, ma: r.ma_nv, don: 0, xm: 0, xt: 0, tre: 0, loi: 0, mau: 0, ban: 0, ds: 0 });
