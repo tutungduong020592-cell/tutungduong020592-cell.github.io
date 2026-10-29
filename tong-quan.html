@@ -403,7 +403,7 @@ let _rz; window.addEventListener('resize', () => { clearTimeout(_rz); _rz = setT
   <section class="tq-sec" id="canh-bao">
     <h2 class="tq-h2">4. Cảnh báo user chất lượng nguy hiểm</h2>
     <div class="tq-card">
-      <div class="nt rs-note">Điểm rủi ro = số đơn trễ hẹn + 3 × số lỗi tay nghề. 10 user điểm cao nhất.</div>
+      <div class="nt rs-note">Điểm rủi ro = số đơn trễ hẹn + số lỗi tay nghề. 10 user điểm cao nhất.</div>
       <div class="tq-tw">
         <table class="tq-t rs" data-source="user_kpi" data-row-key="k">
           <thead><tr><th class="l" data-field="user">User</th><th class="l" data-field="kho">Kho</th><th data-field="don_tc">Đơn TC</th><th data-field="tre_hen">Trễ hẹn</th><th data-field="dung_hen">% Đúng hẹn</th><th data-field="loi_tn">Lỗi tay nghề</th><th data-field="tay_nghe">% Tay nghề</th><th data-field="diem_rui_ro">Điểm rủi ro</th></tr></thead>
@@ -467,10 +467,10 @@ dash.calc('kpi', {
 dash.calc('user_kpi', {
   inputs: ['nv_ngay', 'nv'],
   title: 'Chỉ số theo user và kỳ',
-  description: 'Cộng số liệu từng user (theo kho) cho cả tháng và từng tuần. % tay nghề user = 1 − lỗi/đơn TC; điểm rủi ro = trễ hẹn + 3 × lỗi tay nghề; sao và tiếp cận thành công lấy cả tháng.',
+  description: 'Cộng số liệu từng user (theo kho) cho cả tháng và từng tuần. % tay nghề user = 1 − lỗi/mẫu số (đơn + phiếu tay nghề của user); điểm rủi ro = trễ hẹn + lỗi tay nghề; sao và tiếp cận thành công lấy cả tháng.',
   fn: (nv_ngay, nv) => {
     const wk = (d) => { const n = +d.slice(8, 10); return n <= 7 ? 'W1' : n <= 14 ? 'W2' : n <= 21 ? 'W3' : 'W4'; };
-    const F = ['don_tc', 'xe_may', 'xe_tai', 'xe_tai_nb', 'tre_hen', 'loi_tn', 'don_ban', 'doanh_so'];
+    const F = ['don_tc', 'xe_may', 'xe_tai', 'xe_tai_nb', 'tre_hen', 'loi_tn', 'mau_tn', 'don_ban', 'doanh_so'];
     const info = new Map(nv.map((r) => [r.khoa, r]));
     const acc = new Map();
     for (const r of nv_ngay) for (const p of ['M', wk(r.ngay)]) {
@@ -479,8 +479,8 @@ dash.calc('user_kpi', {
       const a = acc.get(k); for (const f of F) a[f] += +r[f] || 0;
     }
     return [...acc.values()].map((a) => ({ ...a, xe_thue: Math.max(0, a.xe_tai - a.xe_tai_nb),
-      dung_hen: a.don_tc ? 1 - a.tre_hen / a.don_tc : null, tay_nghe: a.don_tc ? 1 - a.loi_tn / a.don_tc : 1,
-      diem_rui_ro: a.tre_hen + 3 * a.loi_tn }));
+      dung_hen: a.don_tc ? 1 - a.tre_hen / a.don_tc : null, tay_nghe: a.mau_tn ? 1 - a.loi_tn / a.mau_tn : (a.loi_tn ? null : 1),
+      diem_rui_ro: a.tre_hen + a.loi_tn }));   // như HNO+ (29/10): mẫu số = đơn + phiếu của user, không nhân 3 lỗi TN
   },
 });
 dash.calc('loi_nhom', {
@@ -650,7 +650,7 @@ dash.calc('loi_nhom', {
     note('pm', R && R.don_tc ? pc(R.xe_may / R.don_tc, 1) + ' tổng đơn' : ' ');
     note('nb', M ? (M.so_xe_nb_khai_bao ? M.so_xe_nb_khai_bao + ' xe đã khai báo' : 'Chưa khai báo biển số xe tải nội bộ') : ' ', M && !M.so_xe_nb_khai_bao ? 'tq-warn' : '');
     note('thue', R && R.don_tc ? pc((R.xe_thue ?? 0) / R.don_tc, 1) + ' tổng đơn' : ' ');
-    note('mau', R ? (mode === 'USER' ? 'trên ' + n0(R.don_tc) + ' đơn TC' : 'trên ' + n0(R.mau_tn) + ' phiếu (mẫu số)') : ' ');
+    note('mau', R ? 'trên ' + n0(R.mau_tn) + ' đơn + phiếu (mẫu số)' : ' ');
     note('tre', R ? 'trên ' + n0(R.don_tc) + ' đơn TC' : ' ');
     note('sao', mode === 'ALL' && R && R.so_kho_co_sao ? ` · ${R.so_kho_dat_sao}/${R.so_kho_co_sao} kho đạt` : ' · cả tháng');
     note('tho', mode === 'USER' ? 'chỉ tính cho kho, không tính cho từng user' : R ? 'trên ' + n0(khoR ? (mode === 'ALL' ? khoR.reduce((a, r) => a + r.so_user, 0) : (khoR.find((r) => r.kho === scope) || {}).so_user) : null) + ' user có đơn' : ' ');
@@ -781,7 +781,7 @@ dash.calc('loi_nhom', {
       let top = pool.slice(0, 10);
       const meIdx = mode === 'USER' ? pool.findIndex((r) => r.khoa === S.user) : -1;
       if (meIdx >= 10) top = top.concat(pool[meIdx]);
-      $('.rs-note').textContent = 'Điểm rủi ro = số đơn trễ hẹn + 3 × số lỗi tay nghề. ' + (ukho === ALL ? '10 user điểm cao nhất toàn vùng.' : '10 user điểm cao nhất kho ' + ukho + '.') + (mode === 'USER' ? (meIdx >= 0 ? ` User đang xem xếp hạng ${meIdx + 1}/${pool.length} (tô vàng).` : ' User đang xem không có điểm rủi ro.') : '');
+      $('.rs-note').textContent = 'Điểm rủi ro = số đơn trễ hẹn + số lỗi tay nghề. ' + (ukho === ALL ? '10 user điểm cao nhất toàn vùng.' : '10 user điểm cao nhất kho ' + ukho + '.') + (mode === 'USER' ? (meIdx >= 0 ? ` User đang xem xếp hạng ${meIdx + 1}/${pool.length} (tô vàng).` : ' User đang xem không có điểm rủi ro.') : '');
       const body = $('.rs tbody');
       if (!top.length) { const tr = document.createElement('tr'); const c = td('Không có user cần cảnh báo.', 'l'); c.colSpan = 8; tr.append(c); body.replaceChildren(tr); }
       else body.replaceChildren(...top.map((r) => { const tr = document.createElement('tr'); tr.dataset.key = r.k; if (r.khoa === S.user) tr.className = 'me';
