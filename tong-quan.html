@@ -364,7 +364,7 @@ let _rz; window.addEventListener('resize', () => { clearTimeout(_rz); _rz = setT
       <div class="nt rk-note">Chạm vào một kho để xem chi tiết kho đó. Màu xanh là đạt, màu đỏ là chưa đạt mục tiêu của từng kho (theo sheet BC).</div>
       <div class="tq-tw">
         <table class="tq-t rk" data-source="kpi" data-row-key="k">
-          <thead><tr><th class="l" data-field="scope">Kho</th><th class="l" data-field="tieu_chi">Tiêu chí</th><th data-field="don_tc">Đơn TC</th><th data-field="dung_hen">% Đúng hẹn</th><th data-field="tay_nghe">% Tay nghề</th><th data-field="sao">Sao phục vụ</th><th data-field="ty_le_huy">% Hủy/NT</th><th data-field="loi_tn">Lỗi tay nghề</th><th data-field="tre_hen">Trễ hẹn</th></tr></thead>
+          <thead><tr><th class="l" data-field="scope">Kho</th><th class="l" data-field="tieu_chi">Tiêu chí</th><th data-field="sao">Sao phục vụ</th><th data-field="dung_hen">% Đúng hẹn</th><th data-field="tay_nghe">% Tay nghề</th><th data-field="ty_le_huy">% Hủy/NT</th><th data-field="don_tc">Đơn TC</th><th data-field="loi_tn">Lỗi tay nghề</th><th data-field="tre_hen">Trễ hẹn</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -728,17 +728,18 @@ dash.calc('loi_nhom', {
       $('.rk tbody').replaceChildren(...rk.map((r) => {
         const t = MK.get(r.scope) || {}; const tdh = t.mt_dung_hen ?? M.mt_dung_hen, ttn = t.mt_tay_nghe ?? M.mt_tay_nghe, tsao = t.mt_sao ?? M.mt_sao;
         const tr = document.createElement('tr'); tr.dataset.key = r.k;
-        // 4 tiêu chí: đúng hẹn, tay nghề, sao, hủy/nhập trả (hủy: thấp hơn mục tiêu là đạt)
+        // 4 tiêu chí theo thứ tự: sao, đúng hẹn, tay nghề, hủy/nhập trả (hủy: thấp hơn mục tiêu là đạt)
         const thuy = t.ty_le_huy, mhuy = t.mt_huy ?? M.mt_huy;
-        const cr = [['Đúng hẹn', r.dung_hen == null ? null : r.dung_hen >= tdh], ['Tay nghề', r.tay_nghe == null ? null : r.tay_nghe >= ttn],
-          ['Sao', r.sao == null ? null : r.sao >= tsao], ['Hủy/NT', thuy == null || mhuy == null ? null : thuy <= mhuy]];
+        const cr = [['Sao', r.sao == null ? null : r.sao >= tsao], ['Đúng hẹn', r.dung_hen == null ? null : r.dung_hen >= tdh],
+          ['Tay nghề', r.tay_nghe == null ? null : r.tay_nghe >= ttn], ['Hủy/NT', thuy == null || mhuy == null ? null : thuy <= mhuy]];
         const ev = cr.filter((c) => c[1] != null), okN = ev.filter((c) => c[1]).length, allOk = ev.length > 0 && okN === ev.length;
         tr.classList.add(allOk ? 'rk-ok' : 'rk-bad');
         const nm = td('', 'l rk-nm'); const sp = document.createElement('span'); sp.className = 'rk-name'; sp.textContent = r.scope;
         const bd = document.createElement('span'); bd.className = 'rk-bd ' + (allOk ? 'ok' : 'bad'); bd.textContent = allOk ? `${okN}/${ev.length} ĐẠT` : `⚠ ${okN}/${ev.length} CHƯA ĐẠT`; nm.append(sp, bd);
         const ch = td('', 'l rk-ch'); cr.forEach(([n, v]) => { const c = document.createElement('span'); c.className = 'rk-c ' + (v == null ? 'na' : v ? 'ok' : 'bad'); c.textContent = (v == null ? '– ' : v ? '✓ ' : '✗ ') + n; ch.append(c); });
-        tr.append(nm, ch, td(n0(r.don_tc)), td(pc(r.dung_hen), r.dung_hen >= tdh ? 'tq-ok' : 'tq-bad'), td(pc(r.tay_nghe), r.tay_nghe == null ? '' : r.tay_nghe >= ttn ? 'tq-ok' : 'tq-bad'),
-          td(s2(r.sao), r.sao == null ? '' : r.sao >= tsao ? 'tq-ok' : 'tq-bad'), td(thuy == null ? '—' : pc(thuy), thuy == null || mhuy == null ? '' : thuy <= mhuy ? 'tq-ok' : 'tq-bad'), td(n0(r.loi_tn)), td(n0(r.tre_hen)));
+        tr.append(nm, ch, td(s2(r.sao), r.sao == null ? '' : r.sao >= tsao ? 'tq-ok' : 'tq-bad'), td(pc(r.dung_hen), r.dung_hen >= tdh ? 'tq-ok' : 'tq-bad'),
+          td(pc(r.tay_nghe), r.tay_nghe == null ? '' : r.tay_nghe >= ttn ? 'tq-ok' : 'tq-bad'), td(thuy == null ? '—' : pc(thuy), thuy == null || mhuy == null ? '' : thuy <= mhuy ? 'tq-ok' : 'tq-bad'),
+          td(n0(r.don_tc)), td(n0(r.loi_tn)), td(n0(r.tre_hen)));
         return tr;
       }));
     }
